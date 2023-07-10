@@ -74,7 +74,7 @@ func (contoller *ChatControllerImpl) wsHandlerNew(ctx *gin.Context) {
 
 			for _, connection := range connections {
 				if connection.UserId == message.Recipient {
-					message, err := json.Marshal(dto.MessageDTO{Recipient: userConnection.UserId, Message: message.Message})
+					message, err := json.Marshal(dto.MessageDTO{Sender: message.Sender, Recipient: message.Recipient, Message: message.Message})
 					log.Print(err)
 					err = connection.Connection.WriteMessage(websocket.TextMessage, message)
 					utils.LogIfError(err)
