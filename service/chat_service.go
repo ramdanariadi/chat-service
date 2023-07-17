@@ -12,10 +12,37 @@ import (
 type ChatService interface {
 	GetMessageHistory(requestBody dto.GetMessageHistoryDTO) *[]dto.MessageHistoryDTO
 	StoreMessage(message dto.MessageDTO)
+	GetUserWithLastMessage(requestBody dto.UserChatRequest) []*dto.UserChat
 }
 
 type ChatServiceImpl struct {
 	*gorm.DB
+}
+
+func (service *ChatServiceImpl) GetUserWithLastMessage(requestBody dto.UserChatRequest) []*dto.UserChat {
+	var userAndLastMessage []*dto.UserChat
+	sql := "WITH ranked_message AS (SELECT *, RANK() OVER (PARTITION BY object ORDER BY created_at DESC ) AS rank_val " +
+		"FROM (SELECT recipient AS object, message, created_at " +
+		"	FROM chats " +
+		"	WHERE sender = ? " +
+		"	UNION " +
+		"	SELECT sender AS object, message, created_at " +
+		"	FROM chats " +
+		"	WHERE recipient = ?) AS raw) " +
+		"SELECT object AS UserId, message AS LastMessage " +
+		"FROM ranked_message " +
+		"WHERE rank_val = 1 " +
+		"ORDER BY created_at DESC "
+	log.Println("user id : " + requestBody.UserId)
+	rows, err := service.DB.Raw(sql, requestBody.UserId, requestBody.UserId).Rows()
+	utils.LogIfError(err)
+	for rows.Next() {
+		var userChat dto.UserChat
+		err := rows.Scan(&userChat.UserId, &userChat.LastMessage)
+		utils.LogIfError(err)
+		userAndLastMessage = append(userAndLastMessage, &userChat)
+	}
+	return userAndLastMessage
 }
 
 func (service *ChatServiceImpl) StoreMessage(message dto.MessageDTO) {

@@ -7,24 +7,22 @@ import (
 	"github.com/ramdanariadi/chat-service/dto"
 	"github.com/ramdanariadi/chat-service/service"
 	"github.com/ramdanariadi/chat-service/utils"
-	"gorm.io/gorm"
 	"log"
 )
 
 type ChatControllerImpl struct {
-	*gorm.DB
 	Upgrader       *websocket.Upgrader
 	Connections    []*service.UserConnection
 	ConnectionChan chan *service.UserConnection
 	Service        service.ChatService
 }
 
-func (contoller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
-	conn, err := contoller.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+func (controller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
+	conn, err := controller.Upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	utils.LogIfError(err)
 	userId := ctx.Param("userId")
 	connection := service.UserConnection{UserId: userId, Connection: conn}
-	contoller.Connections = append(contoller.Connections, &connection)
+	controller.Connections = append(controller.Connections, &connection)
 	marshal, err := json.Marshal(dto.MessageDTO{Recipient: userId, Message: "hi!!"})
 	utils.LogIfError(err)
 
@@ -48,9 +46,9 @@ func (contoller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
 			err2 := json.Unmarshal(p, &message)
 			utils.LogIfError(err2)
 
-			contoller.Service.StoreMessage(message)
+			controller.Service.StoreMessage(message)
 
-			for _, connection := range contoller.Connections {
+			for _, connection := range controller.Connections {
 				if connection.UserId == message.Recipient {
 					message, err := json.Marshal(dto.MessageDTO{Sender: message.Sender, Recipient: message.Recipient, Message: message.Message})
 					log.Print(err)
@@ -60,14 +58,22 @@ func (contoller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
 				}
 			}
 		}
-	}(&connection, contoller.ConnectionChan)
+	}(&connection, controller.ConnectionChan)
 }
 
-func (contoller *ChatControllerImpl) GetMessageHistory(ctx *gin.Context) {
+func (controller *ChatControllerImpl) GetMessageHistory(ctx *gin.Context) {
 	var reqBody dto.GetMessageHistoryDTO
 	err := ctx.ShouldBind(&reqBody)
 	utils.LogIfError(err)
 
-	history := contoller.Service.GetMessageHistory(reqBody)
+	history := controller.Service.GetMessageHistory(reqBody)
 	ctx.JSON(200, gin.H{"data": history})
+}
+
+func (controller *ChatControllerImpl) GetUser(ctx *gin.Context) {
+	var requestBody dto.UserChatRequest
+	err := ctx.ShouldBind(&requestBody)
+	utils.LogIfError(err)
+	message := controller.Service.GetUserWithLastMessage(requestBody)
+	ctx.JSON(200, gin.H{"data": message})
 }

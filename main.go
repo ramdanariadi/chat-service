@@ -58,7 +58,7 @@ func main() {
 		close(connChan)
 	}()
 
-	chatController := controller.ChatControllerImpl{DB: db, Upgrader: &upgrader, ConnectionChan: connChan, Connections: connections}
+	chatController := controller.ChatControllerImpl{Upgrader: &upgrader, ConnectionChan: connChan, Connections: connections, Service: &service.ChatServiceImpl{db}}
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
@@ -75,7 +75,7 @@ func main() {
 
 	router.GET("/ws/:userId", chatController.WSHandler)
 	router.POST("/message/history", chatController.GetMessageHistory)
-	router.POST("/message/history/user")
+	router.POST("/message/history/user", chatController.GetUser)
 
 	err = router.Run(":8087")
 	utils.LogIfError(err)
