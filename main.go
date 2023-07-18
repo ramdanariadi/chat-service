@@ -77,6 +77,6 @@ func main() {
 	router.POST("/message/history", chatController.GetMessageHistory)
 	router.POST("/message/history/user", chatController.GetUser)
 
-	err = router.Run(":8087")
+	err = router.Run()
 	utils.LogIfError(err)
 }
