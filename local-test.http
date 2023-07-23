@@ -1,24 +1,16 @@
 ###
-POST http://localhost:8087/message
-Content-Type: application/json
-
-{
-  "userId" :  "u1",
-  "message" : "hi u1"
-}
-
-
-###
-POST http://localhost:8087/message
+POST http://localhost:8080/message/history
 Content-Type: application/json
 
 {
   "userIdFrom" : "u2",
-  "userIdTo" :"u1"
+  "userIdTo" :"u1",
+  "pageIndex":  0,
+  "pageSize": 10
 }
 
 ###
-POST http://localhost:8087/message/history/user
+POST http://localhost:8080/message/history/user
 Content-Type: application/json
 
 {
