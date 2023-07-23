@@ -23,20 +23,20 @@ func (controller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
 	userId := ctx.Param("userId")
 	connection := service.UserConnection{UserId: userId, Connection: conn}
 	*controller.Connections = append(*controller.Connections, &connection)
-	marshal, err := json.Marshal(dto.MessageDTO{Recipient: userId, Message: "hi!!"})
-	utils.LogIfError(err)
+	//marshal, err := json.Marshal(dto.MessageDTO{Recipient: userId, Message: "hi!!"})
+	//utils.LogIfError(err)
 
-	err = conn.WriteMessage(websocket.TextMessage, marshal)
-	log.Println(err)
+	//err = conn.WriteMessage(websocket.TextMessage, marshal)
+	//log.Println(err)
 
 	go func(userConnection *service.UserConnection, userChan chan<- *service.UserConnection) {
 		for {
 			_, p, e := userConnection.Connection.ReadMessage()
+			utils.LogIfError(e)
+			log.Println("read message from userId : " + userConnection.UserId)
 			if nil != e {
-				log.Println("read message from " + userConnection.UserId)
-				utils.LogIfError(e)
 				if websocket.IsUnexpectedCloseError(e) {
-					log.Println("ws closed for " + userConnection.UserId)
+					log.Println("ws closed for userId : " + userConnection.UserId)
 					userChan <- userConnection
 				}
 				break
@@ -47,9 +47,9 @@ func (controller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
 			utils.LogIfError(err2)
 
 			controller.Service.StoreMessage(message)
-			log.Printf("connection base in WS HANDLER : %p", controller.Connections)
-			for _, connection := range *controller.Connections {
-				log.Printf("check connection IN WS HANDLER,userId : %s,connection addr : %p,userId addr : %p, ws.conn Addr : %p", connection.UserId, connection, &connection.UserId, connection.Connection)
+			log.Printf("connection base in WS Handler => %p, len : %d", controller.Connections, len(*controller.Connections))
+			for index, connection := range *controller.Connections {
+				log.Printf("%d. Connection Info => userId : %s, connection addr : %p, userId addr : %p, ws.conn addr : %p", index, connection.UserId, connection, &connection.UserId, connection.Connection)
 				if connection.UserId == message.Recipient {
 					message, err := json.Marshal(dto.MessageDTO{Sender: message.Sender, Recipient: message.Recipient, Message: message.Message})
 					log.Print(err)

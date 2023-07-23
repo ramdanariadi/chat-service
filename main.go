@@ -27,24 +27,21 @@ var connections = make([]*service.UserConnection, 0)
 var connChan = make(chan *service.UserConnection)
 
 func CloseUserConnection(connChan <-chan *service.UserConnection) {
-	var connTemp = make([]*service.UserConnection, 0)
-	log.Printf("connection base in CloseUserConnection : %p", &connections)
 	for userConn := range connChan {
+		var connTemp = make([]*service.UserConnection, 0)
 		for _, conn := range connections {
-			log.Printf("User Connection : %s, address : %p", conn.UserId, &conn)
 			if conn == userConn {
 				err := conn.Connection.Close()
 				utils.LogIfError(err)
-				log.Println("CloseUserConnection : " + conn.UserId)
-				log.Printf("check connection IN Close User Connection,userId : %s,connection addr : %p,userId addr : %p, ws.conn Addr : %p", conn.UserId, conn, &conn.UserId, conn.Connection)
+				log.Printf("CloseUserConnection => userId : %s,connection addr : %p,userId addr : %p, ws.conn Addr : %p", conn.UserId, conn, &conn.UserId, conn.Connection)
 			} else {
 				connTemp = append(connTemp, conn)
 			}
 		}
 		connections = connTemp
-		log.Println("User Connections after remove closed connection")
+		log.Printf("User Connections after remove closed connection : %d", len(connections))
 		for _, conn := range connections {
-			log.Printf("User Connection : %s, address : %p", conn.UserId, &conn)
+			log.Printf("User Connection : %s, address : %p", conn.UserId, conn)
 		}
 	}
 }
