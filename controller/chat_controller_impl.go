@@ -68,7 +68,7 @@ func (controller *ChatControllerImpl) GetMessageHistory(ctx *gin.Context) {
 	utils.LogIfError(err)
 
 	history := controller.Service.GetMessageHistory(reqBody)
-	ctx.JSON(200, gin.H{"data": history})
+	ctx.JSON(200, history)
 }
 
 func (controller *ChatControllerImpl) GetUser(ctx *gin.Context) {

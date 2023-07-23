@@ -6,11 +6,10 @@ import (
 	"github.com/ramdanariadi/chat-service/model"
 	"github.com/ramdanariadi/chat-service/utils"
 	"gorm.io/gorm"
-	"log"
 )
 
 type ChatService interface {
-	GetMessageHistory(requestBody dto.GetMessageHistoryDTO) *[]dto.MessageHistoryDTO
+	GetMessageHistory(requestBody dto.GetMessageHistoryDTO) dto.MessageHistoryDTO
 	StoreMessage(message dto.MessageDTO)
 	GetUserWithLastMessage(requestBody dto.UserChatRequest) []*dto.UserChat
 }
@@ -33,7 +32,6 @@ func (service *ChatServiceImpl) GetUserWithLastMessage(requestBody dto.UserChatR
 		"FROM ranked_message " +
 		"WHERE rank_val = 1 " +
 		"ORDER BY created_at DESC "
-	log.Println("user id : " + requestBody.UserId)
 	rows, err := service.DB.Raw(sql, requestBody.UserId, requestBody.UserId).Rows()
 	utils.LogIfError(err)
 	for rows.Next() {
@@ -49,21 +47,25 @@ func (service *ChatServiceImpl) StoreMessage(message dto.MessageDTO) {
 	newUUID, _ := uuid.NewUUID()
 	chat := model.Chat{Id: newUUID.String(), Sender: message.Sender, Recipient: message.Recipient, Message: message.Message}
 	service.DB.Save(&chat)
-	log.Println("end")
 }
 
-func (service *ChatServiceImpl) GetMessageHistory(reqBody dto.GetMessageHistoryDTO) *[]dto.MessageHistoryDTO {
-	chatHistory := make([]dto.MessageHistoryDTO, 0)
+func (service *ChatServiceImpl) GetMessageHistory(reqBody dto.GetMessageHistoryDTO) dto.MessageHistoryDTO {
+	chatHistory := make([]*dto.MessageHistoryItemDTO, 0)
 	var chats []*model.Chat
 
 	senderAndRecipient := []string{reqBody.UserIdFrom, reqBody.UserIdTo}
-	tx := service.DB.Model(&model.Chat{}).Where("sender IN ? AND recipient IN ?", senderAndRecipient, senderAndRecipient).Find(&chats)
+	tx := service.DB.Model(&model.Chat{}).Where("sender IN ? AND recipient IN ?", senderAndRecipient, senderAndRecipient)
+
+	var count int64
+	tx.Count(&count)
+
+	tx.Order("created_at DESC").Limit(reqBody.PageSize).Offset(reqBody.PageSize * reqBody.PageIndex).Find(&chats)
 	utils.LogIfError(tx.Error)
 
 	for _, chat := range chats {
-		dto := dto.MessageHistoryDTO{From: chat.Sender, To: chat.Recipient, Message: chat.Message, Time: chat.CreatedAt.Unix()}
-		chatHistory = append(chatHistory, dto)
+		dto := dto.MessageHistoryItemDTO{Id: chat.Id, From: chat.Sender, To: chat.Recipient, Message: chat.Message, Time: chat.CreatedAt.Unix()}
+		chatHistory = append(chatHistory, &dto)
 	}
 
-	return &chatHistory
+	return dto.MessageHistoryDTO{Data: chatHistory, RecordsTotal: count, RecordsFiltered: len(chatHistory)}
 }
