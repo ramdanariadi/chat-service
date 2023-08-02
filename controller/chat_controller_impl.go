@@ -33,7 +33,7 @@ func (controller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
 		for {
 			_, p, e := userConnection.Connection.ReadMessage()
 			utils.LogIfError(e)
-			log.Println("read message from userId : " + userConnection.UserId)
+			log.Println("read messageDTO from userId : " + userConnection.UserId)
 			if nil != e {
 				if websocket.IsUnexpectedCloseError(e) {
 					log.Println("ws closed for userId : " + userConnection.UserId)
@@ -42,17 +42,17 @@ func (controller *ChatControllerImpl) WSHandler(ctx *gin.Context) {
 				break
 			}
 			log.Println(p)
-			var message dto.MessageDTO
-			err2 := json.Unmarshal(p, &message)
+			var messageDTO dto.MessageDTO
+			err2 := json.Unmarshal(p, &messageDTO)
 			utils.LogIfError(err2)
 
-			controller.Service.StoreMessage(message)
+			controller.Service.StoreMessage(messageDTO)
 			log.Printf("connection base in WS Handler => %p, len : %d", controller.Connections, len(*controller.Connections))
 			for index, connection := range *controller.Connections {
 				log.Printf("%d. Connection Info => userId : %s, connection addr : %p, userId addr : %p, ws.conn addr : %p", index, connection.UserId, connection, &connection.UserId, connection.Connection)
-				if connection.UserId == message.Recipient {
-					message, err := json.Marshal(dto.MessageDTO{Sender: message.Sender, Recipient: message.Recipient, Message: message.Message})
-					log.Print(err)
+				if connection.UserId == messageDTO.Recipient {
+					message, err := json.Marshal(messageDTO)
+					utils.LogIfError(err)
 					err = connection.Connection.WriteMessage(websocket.TextMessage, message)
 					utils.LogIfError(err)
 					break

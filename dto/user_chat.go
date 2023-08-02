@@ -7,6 +7,9 @@ type UserChatRequest struct {
 }
 
 type UserChat struct {
-	UserId      string `json:"userId"`
-	LastMessage string `json:"lastMessage"`
+	UserId       string `json:"userId"`
+	Username     string `json:"username"`
+	UserImageUrl string `json:"userImageUrl"`
+	LastMessage  string `json:"lastMessage"`
+	CreatedAt    int64  `json:"createdAt"`
 }
