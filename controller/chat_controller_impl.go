@@ -78,3 +78,23 @@ func (controller *ChatControllerImpl) GetUser(ctx *gin.Context) {
 	message := controller.Service.GetUserWithLastMessage(requestBody)
 	ctx.JSON(200, gin.H{"data": message})
 }
+
+func (controller *ChatControllerImpl) CloseUserConnection() {
+	for userConn := range controller.ConnectionChan {
+		var connTemp = make([]*service.UserConnection, 0)
+		for _, conn := range *controller.Connections {
+			if conn == userConn {
+				err := conn.Connection.Close()
+				utils.LogIfError(err)
+				log.Printf("CloseUserConnection => userId : %s,connection addr : %p,userId addr : %p, ws.conn Addr : %p", conn.UserId, conn, &conn.UserId, conn.Connection)
+			} else {
+				connTemp = append(connTemp, conn)
+			}
+		}
+		*controller.Connections = connTemp
+		log.Printf("User Connections after remove closed connection : %d", len(*controller.Connections))
+		for _, conn := range *controller.Connections {
+			log.Printf("User Connection : %s, address : %p", conn.UserId, conn)
+		}
+	}
+}

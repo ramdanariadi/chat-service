@@ -1,20 +1,20 @@
 ###
-POST http://localhost:8080/message/history
+POST http://localhost:10000/message/history
 Content-Type: application/json
 
 {
   "userIdFrom" : "u2",
   "userIdTo" :"u1",
-  "pageIndex":  0,
-  "pageSize": 10
+  "pageIndex":  1,
+  "pageSize": 1000
 }
 
 ###
-POST http://localhost:8080/message/history/user
+POST http://localhost:10000/message/history/user
 Content-Type: application/json
 
 {
-  "userId": "u1",
+  "userId": "9388cb37-f57f-11ed-9dc2-0242ac130003",
   "pageIndex": 0,
   "pageSize": 20
 }

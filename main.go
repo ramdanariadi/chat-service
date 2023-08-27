@@ -5,6 +5,7 @@ import (
 	_ "github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/ramdanariadi/chat-service/controller"
 	"github.com/ramdanariadi/chat-service/model"
@@ -13,8 +14,8 @@ import (
 	"github.com/ramdanariadi/chat-service/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -26,27 +27,16 @@ var upgrader = websocket.Upgrader{
 var connections = make([]*service.UserConnection, 0)
 var connChan = make(chan *service.UserConnection)
 
-func CloseUserConnection(connChan <-chan *service.UserConnection) {
-	for userConn := range connChan {
-		var connTemp = make([]*service.UserConnection, 0)
-		for _, conn := range connections {
-			if conn == userConn {
-				err := conn.Connection.Close()
-				utils.LogIfError(err)
-				log.Printf("CloseUserConnection => userId : %s,connection addr : %p,userId addr : %p, ws.conn Addr : %p", conn.UserId, conn, &conn.UserId, conn.Connection)
-			} else {
-				connTemp = append(connTemp, conn)
-			}
-		}
-		connections = connTemp
-		log.Printf("User Connections after remove closed connection : %d", len(connections))
-		for _, conn := range connections {
-			log.Printf("User Connection : %s, address : %p", conn.UserId, conn)
-		}
-	}
-}
-
 func main() {
+	env := os.Getenv("ENVIRONMENT")
+	if "" == env {
+		env = "development"
+	}
+	err := godotenv.Load(".env." + env)
+	utils.LogIfError(err)
+	err = godotenv.Load()
+	utils.LogIfError(err)
+
 	connection, err := setup.NewDBConnection()
 	utils.LogIfError(err)
 	db, err := gorm.Open(postgres.New(postgres.Config{Conn: connection}))
@@ -57,12 +47,12 @@ func main() {
 	upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
 	}
-	go CloseUserConnection(connChan)
+
+	chatController := controller.ChatControllerImpl{Upgrader: &upgrader, ConnectionChan: connChan, Connections: &connections, Service: &service.ChatServiceImpl{db}}
+	go chatController.CloseUserConnection()
 	defer func() {
 		close(connChan)
 	}()
-
-	chatController := controller.ChatControllerImpl{Upgrader: &upgrader, ConnectionChan: connChan, Connections: &connections, Service: &service.ChatServiceImpl{db}}
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
