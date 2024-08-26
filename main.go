@@ -47,8 +47,8 @@ func main() {
 	upgrader.CheckOrigin = func(r *http.Request) bool {
 		return true
 	}
-
-	chatController := controller.ChatControllerImpl{Upgrader: &upgrader, ConnectionChan: connChan, Connections: &connections, Service: &service.ChatServiceImpl{db}}
+	var chatController controller.ChatController
+	chatController = &controller.ChatControllerImpl{Upgrader: &upgrader, ConnectionChan: connChan, Connections: &connections, Service: &service.ChatServiceImpl{db}}
 	go chatController.CloseUserConnection()
 	defer func() {
 		close(connChan)
