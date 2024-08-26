@@ -2,8 +2,8 @@ package dto
 
 type UserChatRequest struct {
 	UserId    string `json:"userId"`
-	pageIndex int    `json:"pageIndex"`
-	pageSize  int64  `json:"pageSize"`
+	PageIndex int    `json:"pageIndex"`
+	PageSize  int64  `json:"pageSize"`
 }
 
 type UserChat struct {
